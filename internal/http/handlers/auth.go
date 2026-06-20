@@ -22,6 +22,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		JsonEncode(w, errResp)
 		return
 	}
+
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	if !ValidateUsername(username) {
