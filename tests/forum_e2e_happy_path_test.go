@@ -91,13 +91,14 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			t.Logf("%s: X-Request-Id=%s", api, got)
 		})
 	})
+
 	// 1.1 Truncate
 	t.Run("[POST]/internal/v1/truncate", func(t *testing.T) {
 		c := newTestClient(t)
 
 		truncateDB(t, c)
 	})
-	
+
 	// 2. Login (авторегистрация) двух пользователей
 	var (
 		usernameA = "userA_" + randomSuffix()
@@ -149,7 +150,7 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			}
 		})
 	})
-	return
+
 	if userA == emptyUUID || userB == emptyUUID {
 		t.Fatalf("users not initialized")
 	}
@@ -244,7 +245,6 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 	if threadA1 == nil || threadA2 == nil || threadB1 == nil || threadB2 == nil {
 		t.Fatalf("threads not initialized")
 	}
-
 	// 4. Получение треда по ID
 	t.Run("[GET]/api/v1/threads/{thread_id}", func(t *testing.T) {
 		const api = "[threads_get]"

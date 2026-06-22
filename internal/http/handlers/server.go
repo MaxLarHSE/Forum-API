@@ -14,11 +14,6 @@ type Server struct {
 	service *service.Service
 }
 
-func JsonEncode(w http.ResponseWriter, toEncode any) {
-	if err := json.NewEncoder(w).Encode(toEncode); err != nil {
-		http.Error(w, "json encode error", http.StatusInternalServerError)
-	}
-}
 func NewServer(s *service.Service) *Server {
 	return &Server{service: s}
 }
@@ -38,11 +33,6 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request, params forum.Sea
 }
 
 func (s *Server) ListThreads(w http.ResponseWriter, r *http.Request, params forum.ListThreadsParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request, params forum.CreateThreadParams) {
 	//TODO implement me
 	panic("implement me")
 }
