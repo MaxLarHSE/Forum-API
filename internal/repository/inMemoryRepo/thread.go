@@ -1,18 +1,11 @@
 package inMemoryRepo
 
 import (
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	forum "stepik.leoscode.http/internal/gen/api"
 	"stepik.leoscode.http/internal/repository"
-)
-
-var (
-	ErrAlreadyThreadExist = errors.New("thread already exist")
-	ErrConflict           = errors.New("conflict")
-	ErrNoSuchUserExist    = errors.New("no such user exist")
 )
 
 func (r *RepoInMemory) CreateThread(threadCreate forum.ThreadCreate, XUXI repository.XUXI) forum.Thread {
@@ -33,21 +26,37 @@ func (r *RepoInMemory) CreateThread(threadCreate forum.ThreadCreate, XUXI reposi
 	r.idToThread[id] = thread
 	return thread
 }
+
+func (r *RepoInMemory) GetThread(id int64) (forum.Thread, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if t, ok := r.idToThread[id]; ok {
+		return t, nil
+	}
+	return forum.Thread{}, repository.ErrNoThreadFound
+}
+
 func (r *RepoInMemory) GenerateThreadId() int64 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.threadId++
 	return r.threadId
 }
-func (r *RepoInMemory) CheckUserExist(user uuid.UUID) bool {
+func (r *RepoInMemory) CheckUserExist(user uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	_, ok := r.UUIDToPwd[user]
-	return ok
+	if !ok {
+		return repository.ErrNoSuchUserExist
+	}
+	return nil
 }
-func (r *RepoInMemory) CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thread, bool) {
+func (r *RepoInMemory) CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thread, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	thread, ok := r.XUXIToThread[XUXI]
-	return thread, ok
+	if ok {
+		return thread, repository.ErrUserIdAlreadyExist
+	}
+	return forum.Thread{}, nil
 }

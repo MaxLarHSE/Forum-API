@@ -42,11 +42,6 @@ func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request, threadId f
 	panic("implement me")
 }
 
-func (s *Server) GetThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.GetThreadParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *Server) PatchThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.PatchThreadParams) {
 	//TODO implement me
 	panic("implement me")

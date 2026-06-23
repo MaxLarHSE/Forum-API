@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"stepik.leoscode.http/internal/repository"
 )
 
 var (
@@ -11,9 +12,10 @@ var (
 )
 
 func (s *Service) Authorize(username string, pwd string) (uuid.UUID, error) {
-	userUUID, exist := s.repo.CheckUsernameExist(username)
-	if exist {
-		if !s.repo.CheckCorrectPwd(username, pwd) {
+	userUUID, err := s.repo.CheckUsernameExist(username)
+
+	if errors.Is(err, repository.ErrUserAlreadyExist) {
+		if err = s.repo.CheckCorrectPwd(username, pwd); errors.Is(err, repository.ErrPwdNotCorrect) {
 			return uuid.UUID{}, ErrInvalidPassword
 		}
 		return userUUID, nil

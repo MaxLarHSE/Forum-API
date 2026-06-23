@@ -6,14 +6,16 @@ import (
 	"stepik.leoscode.http/internal/repository"
 )
 
-type Repo interface {
+type Repo interface { // изменить интерфейс под дальнейшую реализацию
 	Authorize(username, pwd string) uuid.UUID
-	CheckUsernameExist(username string) (uuid.UUID, bool)
-	CheckCorrectPwd(username, password string) bool
+	CheckUsernameExist(username string) (uuid.UUID, error)
+	CheckCorrectPwd(username, password string) error
 
 	CreateThread(thread forum.ThreadCreate, XUXI repository.XUXI) forum.Thread
-	CheckUserExist(user uuid.UUID) bool
-	CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thread, bool)
+	GetThread(id int64) (forum.Thread, error)
+
+	CheckUserExist(user uuid.UUID) error
+	CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thread, error)
 	Clear() error
 }
 type Service struct {

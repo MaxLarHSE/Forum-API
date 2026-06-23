@@ -1,6 +1,9 @@
 package inMemoryRepo
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"stepik.leoscode.http/internal/repository"
+)
 
 func (r *RepoInMemory) Authorize(username, pwd string) uuid.UUID {
 	newId := uuid.New()
@@ -9,10 +12,16 @@ func (r *RepoInMemory) Authorize(username, pwd string) uuid.UUID {
 	return newId
 }
 
-func (r *RepoInMemory) CheckUsernameExist(username string) (uuid.UUID, bool) {
+func (r *RepoInMemory) CheckUsernameExist(username string) (uuid.UUID, error) {
 	id, exist := r.userToUUID[username]
-	return id, exist
+	if exist {
+		return id, repository.ErrUserAlreadyExist
+	}
+	return id, nil
 }
-func (r *RepoInMemory) CheckCorrectPwd(username, password string) bool {
-	return r.UUIDToPwd[r.userToUUID[username]] == password
+func (r *RepoInMemory) CheckCorrectPwd(username, password string) error {
+	if r.UUIDToPwd[r.userToUUID[username]] == password {
+		return nil
+	}
+	return repository.ErrPwdNotCorrect
 }

@@ -10,7 +10,6 @@ import (
 )
 
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	err := r.ParseForm()
 	if err != nil {
 		writeError(w, http.StatusBadRequest, forum.ErrorResponse{

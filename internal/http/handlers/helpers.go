@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	forum "stepik.leoscode.http/internal/gen/api"
@@ -25,15 +26,23 @@ func writeJson(w http.ResponseWriter, status int, msg any) {
 		http.Error(w, "json encode error", http.StatusInternalServerError)
 		return
 	}
-
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(buf.Bytes())
 }
 
 func ApiErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
-	w.Header().Set("Content-Type", "application/json")
+	var invalid *forum.InvalidParamFormatError
+	if errors.As(err, &invalid) {
+		if invalid.ParamName == "X-User-Id" {
+			writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{
+				Code:    forum.Unauthorized,
+				Message: err.Error(),
+			})
+		}
+		return
+	}
 	status := http.StatusBadRequest
-
 	resp := forum.ErrorResponse{
 		Code:    "validation_error",
 		Message: err.Error(),
