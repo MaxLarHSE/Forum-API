@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"regexp"
 
 	forum "stepik.leoscode.http/internal/gen/api"
 	"stepik.leoscode.http/internal/repository"
@@ -60,7 +61,7 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request, params for
 	default:
 		writeError(w, http.StatusInternalServerError, forum.ErrorInternal{
 			forum.InternalError,
-			nil,
+			&map[string]interface{}{"error": err},
 			"no relevant error",
 		})
 	}
@@ -81,9 +82,70 @@ func (s *Server) GetThread(w http.ResponseWriter, r *http.Request, threadId foru
 
 	case errors.Is(err, service.ErrThreadNotFound):
 		writeError(w, http.StatusNotFound, forum.ErrorNotFound{forum.NotFound, &map[string]any{"thread id": threadId}, "no thread found"})
+	default:
+		writeError(w, http.StatusInternalServerError, forum.ErrorInternal{
+			forum.InternalError,
+			&map[string]interface{}{"error": err},
+			"no relevant error",
+		})
 	}
 }
 
+func (s *Server) ListThreads(w http.ResponseWriter, r *http.Request, params forum.ListThreadsParams) {
+	var limit, offset int32
+	if params.Limit == nil {
+		limit = 20
+	} else {
+		limit = *params.Limit
+	}
+
+	if params.Offset == nil {
+		offset = 0
+	} else {
+		offset = *params.Offset
+	}
+	if !validateLimit(limit) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"limit": limit}, "limit must be >=1 and <=100"})
+		return
+	}
+	if !validateOffset(offset) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"offset": offset}, "offset must be >=0"})
+		return
+	}
+	if params.Tag != nil && !validTag(*params.Tag) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{}, "invalid tag"})
+		return
+	}
+	//forum.ThreadListResponse{}
+	threadListResp, err := s.service.GetListThreads(repository.ThreadListFilter{
+		Limit:    limit,
+		Offset:   offset,
+		Tag:      params.Tag,
+		AuthorID: params.AuthorId,
+	})
+	switch {
+	case err == nil:
+		writeJson(w, http.StatusOK, threadListResp)
+	default:
+		writeError(w, http.StatusInternalServerError, forum.ErrorInternal{
+			forum.InternalError,
+			&map[string]interface{}{"error": err},
+			"no relevant error",
+		})
+	}
+}
+
+var tagRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+
+func validTag(tag string) bool {
+	return tagRe.MatchString(tag) && tag != "" && len(tag) <= 32
+}
+func validateLimit(l int32) bool {
+	return l >= 1 && l <= 100
+}
+func validateOffset(o int32) bool {
+	return o >= 0
+}
 func validateXI(XI string) bool {
 	return len(XI) >= 1 && len(XI) <= 128
 }

@@ -51,3 +51,8 @@ func (s *Service) GetThreadById(id int64, userId *uuid.UUID) (forum.Thread, erro
 
 	return t, nil
 }
+
+func (s *Service) GetListThreads(threadFilter repository.ThreadListFilter) (forum.ThreadListResponse, error) {
+
+	return s.repo.GetThreads(threadFilter)
+}

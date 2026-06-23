@@ -22,6 +22,14 @@ type RepoInMemory struct {
 	threadId int64
 }
 
+func (r *RepoInMemory) Clear() error {
+	clear(r.userToUUID)
+	clear(r.UUIDToPwd)
+	clear(r.idToThread)
+	clear(r.XUXIToThread)
+	return nil
+}
+
 func NewRepoInMemory() *RepoInMemory {
 	return &RepoInMemory{
 		userToUUID:   make(map[string]uuid.UUID),
@@ -29,9 +37,4 @@ func NewRepoInMemory() *RepoInMemory {
 		idToThread:   make(map[int64]forum.Thread),
 		XUXIToThread: make(map[repository.XUXI]forum.Thread),
 	}
-}
-func (r *RepoInMemory) Clear() error {
-	clear(r.userToUUID)
-	clear(r.UUIDToPwd)
-	return nil
 }

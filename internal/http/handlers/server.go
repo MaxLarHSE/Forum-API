@@ -32,11 +32,6 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request, params forum.Sea
 	panic("implement me")
 }
 
-func (s *Server) ListThreads(w http.ResponseWriter, r *http.Request, params forum.ListThreadsParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.DeleteThreadParams) {
 	//TODO implement me
 	panic("implement me")

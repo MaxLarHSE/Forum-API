@@ -285,7 +285,7 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			})
 		}
 	})
-	return
+
 	// 5. Список тредов + фильтры + пагинация (только happy-path)
 	t.Run("[GET]/api/v1/threads", func(t *testing.T) {
 		const api = "[list_threads]"
@@ -462,6 +462,7 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			})
 		})
 	})
+	return
 
 	// 6. PATCH треда
 	t.Run("[PATCH]/api/v1/threads/{thread_id}", func(t *testing.T) {

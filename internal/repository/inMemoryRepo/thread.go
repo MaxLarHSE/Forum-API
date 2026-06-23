@@ -1,6 +1,8 @@
 package inMemoryRepo
 
 import (
+	"slices"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -59,4 +61,58 @@ func (r *RepoInMemory) CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thre
 		return thread, repository.ErrUserIdAlreadyExist
 	}
 	return forum.Thread{}, nil
+}
+
+func (r *RepoInMemory) GetThreads(filter repository.ThreadListFilter) (forum.ThreadListResponse, error) {
+	threads := r.ThreadsSortedByID()
+	res := []forum.Thread{}
+	isProper := func(t forum.Thread) bool {
+		if filter.Tag != nil {
+			if t.Tags == nil || !slices.Contains(*t.Tags, *filter.Tag) {
+				return false
+			}
+		}
+		if filter.AuthorID != nil {
+			if t.AuthorId != *filter.AuthorID {
+				return false
+			}
+		}
+		return true
+	}
+	for i := range threads {
+		if isProper(threads[i]) {
+			res = append(res, threads[i])
+		}
+	}
+	var total = (int64)(len(res))
+	end := min((int)(filter.Offset+filter.Limit), len(res))
+	begin := min((int)(filter.Offset), len(res))
+	result := make([]forum.Thread, end-begin)
+	copy(result, res[begin:end])
+	return forum.ThreadListResponse{Items: result, Meta: forum.PaginationMeta{
+		Limit:  filter.Limit,
+		Offset: filter.Offset,
+		Total:  total,
+	}}, nil
+}
+
+func (r *RepoInMemory) ThreadsSortedByID() []forum.Thread { // gpt func
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	ids := make([]int64, 0, len(r.idToThread))
+	for id := range r.idToThread {
+		ids = append(ids, id)
+	}
+
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i] < ids[j]
+	})
+
+	threads := make([]forum.Thread, 0, len(ids))
+	for _, id := range ids {
+		threads = append(threads, r.idToThread[id])
+	}
+
+	return threads
 }

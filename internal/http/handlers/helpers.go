@@ -33,13 +33,19 @@ func writeJson(w http.ResponseWriter, status int, msg any) {
 
 func ApiErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 	var invalid *forum.InvalidParamFormatError
+
 	if errors.As(err, &invalid) {
 		if invalid.ParamName == "X-User-Id" {
 			writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{
 				Code:    forum.Unauthorized,
 				Message: err.Error(),
 			})
+			return
 		}
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{
+			Code:    forum.BadRequest,
+			Message: err.Error(),
+		})
 		return
 	}
 	status := http.StatusBadRequest

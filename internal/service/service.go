@@ -13,6 +13,7 @@ type Repo interface { // изменить интерфейс под дальне
 
 	CreateThread(thread forum.ThreadCreate, XUXI repository.XUXI) forum.Thread
 	GetThread(id int64) (forum.Thread, error)
+	GetThreads(filter repository.ThreadListFilter) (forum.ThreadListResponse, error)
 
 	CheckUserExist(user uuid.UUID) error
 	CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thread, error)

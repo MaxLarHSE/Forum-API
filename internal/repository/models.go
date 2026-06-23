@@ -22,3 +22,10 @@ var ( // переписать ошибки
 	ErrPwdNotCorrect      = errors.New("password not correct")
 	ErrUserAlreadyExist   = errors.New("user already exist")
 )
+
+type ThreadListFilter struct {
+	Limit    int32
+	Offset   int32
+	Tag      *string
+	AuthorID *uuid.UUID
+}
