@@ -76,7 +76,8 @@ func (s *Service) ChangeThreadById(id forum.ThreadIdPath, patch models.ThreadPat
 	if errors.Is(err, repository.ErrNoThreadFound) {
 		return forum.Thread{}, ErrThreadNotFound
 	}
-	if thread.IsLocked {
+	if thread.IsLocked && !(patch.IsLocked != nil && *patch.IsLocked == false) {
+
 		return forum.Thread{}, ErrTryChangeLockedThread
 	}
 	err = s.repo.CheckUserExist(params.XUserId)
@@ -94,4 +95,18 @@ func (s *Service) ChangeThreadById(id forum.ThreadIdPath, patch models.ThreadPat
 func (s *Service) GetListThreads(threadFilter repository.ThreadListFilter) (forum.ThreadListResponse, error) {
 
 	return s.repo.GetThreads(threadFilter)
+}
+func (s *Service) DeleteThread(id forum.ThreadIdPath, params forum.DeleteThreadParams) error {
+	thread, err := s.repo.GetThread(id)
+	if errors.Is(err, repository.ErrNoThreadFound) {
+		return ErrThreadNotFound
+	}
+	err = s.repo.CheckUserExist(params.XUserId)
+	if errors.Is(err, repository.ErrUserNotExist) {
+		return ErrUserNotExist
+	}
+	if thread.AuthorId != params.XUserId { // в бд или тут?
+		return ErrUserDontHaveRights
+	}
+	return s.repo.DeleteThreadByUd(id)
 }

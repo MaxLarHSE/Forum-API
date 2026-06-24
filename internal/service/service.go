@@ -17,6 +17,7 @@ type Repo interface { // изменить интерфейс под дальне
 	GetThreads(filter repository.ThreadListFilter) (forum.ThreadListResponse, error)
 	ReplaceThreadById(id forum.ThreadIdPath, create forum.ThreadCreate) (forum.Thread, error)
 	ChangeThreadById(id forum.ThreadIdPath, patch models.ThreadPatchInput) (forum.Thread, error)
+	DeleteThreadByUd(id forum.ThreadIdPath) error
 
 	CheckUserExist(user uuid.UUID) error
 	CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thread, error)

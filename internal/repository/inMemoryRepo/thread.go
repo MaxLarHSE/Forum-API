@@ -153,3 +153,10 @@ func (r *RepoInMemory) ChangeThreadById(id forum.ThreadIdPath, patch models.Thre
 	r.idToThread[id] = threadToChange
 	return threadToChange, nil
 }
+
+func (r *RepoInMemory) DeleteThreadByUd(id forum.ThreadIdPath) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.idToThread, id)
+	return nil
+}

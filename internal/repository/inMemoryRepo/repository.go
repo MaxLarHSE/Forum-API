@@ -15,7 +15,7 @@ type RepoInMemory struct {
 	userToUUID map[string]uuid.UUID
 	UUIDToPwd  map[uuid.UUID]string
 
-	idToThread   map[int64]forum.Thread
+	idToThread   map[int64]forum.Thread // тут лучше модели форума или инт64
 	XUXIToThread map[repository.XUXI]forum.Thread
 
 	mu       sync.Mutex

@@ -693,6 +693,43 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			})
 		}
 	})
+
+	// 12. Удаление треда
+	t.Run("[DELETE]/api/v1/threads/{thread_id}", func(t *testing.T) {
+		const api = "[threads.delete]"
+
+		c := newTestClient(t)
+
+		// --- act: удаляем ранее созданный тред ---
+		deleteResp, err := c.DeleteThreadWithResponse(
+			t.Context(),
+			ThreadIdPath(threadA1.Id),
+			&DeleteThreadParams{
+				XUserId: UserIdHeader(userA),
+			},
+		)
+		if err != nil {
+			t.Fatalf("%s delete thread error: %v", api, err)
+		}
+		if deleteResp.StatusCode() != http.StatusNoContent {
+			t.Fatalf("%s unexpected delete status: %d", api, deleteResp.StatusCode())
+		}
+
+		// --- assert: тред больше недоступен ---
+		getResp, err := c.GetThreadWithResponse(
+			t.Context(),
+			threadA1.Id,
+			&GetThreadParams{
+				XUserId: ptr(OptionalUserIdHeader(userA)),
+			},
+		)
+		if err != nil {
+			t.Fatalf("%s get deleted thread error: %v", api, err)
+		}
+		if getResp.StatusCode() != http.StatusNotFound {
+			t.Fatalf("%s expected 404 after delete, got %d", api, getResp.StatusCode())
+		}
+	})
 	return
 	// 8. Посты в треде: создание (happy path)
 	var (
@@ -1003,42 +1040,6 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 		t.Skip("Можете пропустить тесты на полнотекстовый поиск если ваша реализация не умеет это.")
 	})
 
-	// 12. Удаление треда
-	t.Run("[DELETE]/api/v1/threads/{thread_id}", func(t *testing.T) {
-		const api = "[threads.delete]"
-
-		c := newTestClient(t)
-
-		// --- act: удаляем ранее созданный тред ---
-		deleteResp, err := c.DeleteThreadWithResponse(
-			t.Context(),
-			ThreadIdPath(threadA1.Id),
-			&DeleteThreadParams{
-				XUserId: UserIdHeader(userA),
-			},
-		)
-		if err != nil {
-			t.Fatalf("%s delete thread error: %v", api, err)
-		}
-		if deleteResp.StatusCode() != http.StatusNoContent {
-			t.Fatalf("%s unexpected delete status: %d", api, deleteResp.StatusCode())
-		}
-
-		// --- assert: тред больше недоступен ---
-		getResp, err := c.GetThreadWithResponse(
-			t.Context(),
-			threadA1.Id,
-			&GetThreadParams{
-				XUserId: ptr(OptionalUserIdHeader(userA)),
-			},
-		)
-		if err != nil {
-			t.Fatalf("%s get deleted thread error: %v", api, err)
-		}
-		if getResp.StatusCode() != http.StatusNotFound {
-			t.Fatalf("%s expected 404 after delete, got %d", api, getResp.StatusCode())
-		}
-	})
 }
 
 // --- вспомогательные тесты ---

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	forum "stepik.leoscode.http/internal/gen/api"
+	"stepik.leoscode.http/internal/models"
 )
 
 func JsonEncode(w http.ResponseWriter, toEncode any) {
@@ -48,6 +50,16 @@ func ApiErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 		})
 		return
 	}
+	var reqHeader *forum.RequiredHeaderError
+	if errors.As(err, &reqHeader) {
+		if reqHeader.ParamName == "X-User-Id" {
+			writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{
+				Code:    forum.Unauthorized,
+				Message: err.Error(),
+			})
+			return
+		}
+	}
 	status := http.StatusBadRequest
 	resp := forum.ErrorResponse{
 		Code:    "validation_error",
@@ -57,5 +69,8 @@ func ApiErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 	writeJson(w, status, resp)
 }
 func readJson(r *http.Request, toWrite any) error {
+	if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+		return models.ErrNoJsonContentType
+	}
 	return json.NewDecoder(r.Body).Decode(toWrite)
 }

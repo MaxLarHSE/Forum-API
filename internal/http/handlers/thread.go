@@ -21,11 +21,11 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request, params for
 		return
 	}
 	var threadCreate forum.ThreadCreate
-	if err := readJson(r, &threadCreate); err != nil {
+	if err := readJson(r, &threadCreate); err != nil { // имеет ли смысл рассматривать ошибки другие
 		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{
-			forum.ValidationError,
+			forum.BadRequest,
 			nil,
-			"invalid json"},
+			"not json content type"},
 		)
 		return
 	}
@@ -37,6 +37,7 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request, params for
 		)
 		return
 	}
+
 	thread, err := s.service.CreateThread(threadCreate, repository.XUXI{
 		XU: params.XUserId,
 		XI: params.XIdempotencyKey,
@@ -113,7 +114,7 @@ func (s *Server) ListThreads(w http.ResponseWriter, r *http.Request, params foru
 		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"offset": offset}, "offset must be >=0"})
 		return
 	}
-	if params.Tag != nil && !validTag(*params.Tag) {
+	if params.Tag != nil && !validateTag(*params.Tag) {
 		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{}, "invalid tag"})
 		return
 	}
@@ -143,7 +144,11 @@ func (s *Server) ReplaceThread(w http.ResponseWriter, r *http.Request, threadId 
 	}
 	var threadCreate forum.ThreadCreate
 	if err := readJson(r, &threadCreate); err != nil {
-		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"json": threadCreate}, "json decode error"})
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{
+			forum.BadRequest,
+			nil,
+			"not json content type"},
+		)
 		return
 	}
 	if !validateThread(threadCreate) {
@@ -173,10 +178,6 @@ func (s *Server) ReplaceThread(w http.ResponseWriter, r *http.Request, threadId 
 		})
 	}
 }
-func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.DeleteThreadParams) {
-	//TODO implement me
-	panic("implement me")
-}
 
 func (s *Server) PatchThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.PatchThreadParams) {
 	if !validateThreadId(threadId) {
@@ -185,20 +186,21 @@ func (s *Server) PatchThread(w http.ResponseWriter, r *http.Request, threadId fo
 	}
 	var threadPatch models.ThreadPatchInput
 	if err := readJson(r, &threadPatch); err != nil {
-		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"json": threadPatch}, "json decode error"})
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{
+			forum.BadRequest,
+			nil,
+			"not json content type"},
+		)
 		return
 	}
 	// в спеке вроде комменты о том что максимум одно поле может быть изменено за раз, хотя там anyOf...
-	/*
-		n := threadPatchFields(threadPatch)
-		if n == 0 {
-			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "no fields to update"})
-			return
-		}
-		if n > 1 {
-			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "only one field allowed per request"})
-			return
-		}*/
+
+	n := threadPatchFields(threadPatch)
+	if n == 0 {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "no fields to update"})
+		return
+	}
+
 	if threadPatch.Title != nil {
 		if !validateTitle(*threadPatch.Title) {
 			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect title length"})
@@ -210,6 +212,10 @@ func (s *Server) PatchThread(w http.ResponseWriter, r *http.Request, threadId fo
 			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect content length"})
 			return
 		}
+	}
+	if threadPatch.Tags != nil && !validateTags(*threadPatch.Tags) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect tags"})
+		return
 	}
 	thread, err := s.service.ChangeThreadById(threadId, threadPatch, params)
 	switch {
@@ -223,6 +229,31 @@ func (s *Server) PatchThread(w http.ResponseWriter, r *http.Request, threadId fo
 		writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{forum.Unauthorized, &map[string]any{}, "user dont exist"})
 	case errors.Is(err, service.ErrTryChangeLockedThread):
 		writeError(w, http.StatusForbidden, forum.ErrorUnauthorized{forum.Forbidden, &map[string]any{}, "thread is locked"})
+	default:
+		writeError(w, http.StatusInternalServerError, forum.ErrorInternal{
+			forum.InternalError,
+			&map[string]interface{}{"error": err}, // возможно не стоит ошибку передавать ибо она может содержать внутрянку
+			"no relevant error",
+		})
+	}
+}
+
+func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.DeleteThreadParams) {
+	if !validateThreadId(threadId) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"thread id": threadId}, "thread is minimum 1"})
+		return
+	}
+
+	err := s.service.DeleteThread(threadId, params) // тут именно парамс чтобы когда мы меняли параметры удаления то все было получше
+	switch {
+	case err == nil:
+		writeJson(w, http.StatusNoContent, "тред удален")
+	case errors.Is(err, service.ErrUserDontHaveRights): //404_delete_not_author почему требует 404 а не 403
+		writeError(w, http.StatusNotFound, forum.ErrorNotFound{forum.NotFound, &map[string]any{}, "user dont have rights"})
+	case errors.Is(err, service.ErrThreadNotFound):
+		writeError(w, http.StatusNotFound, forum.ErrorNotFound{forum.NotFound, &map[string]any{"id": threadId}, "thread not found"})
+	case errors.Is(err, service.ErrUserNotExist):
+		writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{forum.Unauthorized, &map[string]any{}, "user dont exist"})
 	default:
 		writeError(w, http.StatusInternalServerError, forum.ErrorInternal{
 			forum.InternalError,
@@ -251,8 +282,23 @@ func threadPatchFields(threadPatch models.ThreadPatchInput) int {
 
 var tagRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 
-func validTag(tag string) bool {
+func validateTag(tag string) bool {
 	return tagRe.MatchString(tag) && tag != "" && len(tag) <= 32
+}
+
+func validateTags(tags []string) bool {
+	if tags == nil {
+		return true
+	}
+	if len(tags) > 10 {
+		return false
+	}
+	for i := range tags {
+		if !validateTag(tags[i]) {
+			return false
+		}
+	}
+	return true
 }
 func validateLimit(l int32) bool {
 	return l >= 1 && l <= 100
@@ -263,17 +309,27 @@ func validateOffset(o int32) bool {
 func validateXI(XI string) bool {
 	return len(XI) >= 1 && len(XI) <= 128
 }
-
 func validateThread(thread forum.ThreadCreate) bool {
-	return validateContent(thread.Content) && validateTitle(thread.Title)
+	var validTags bool
+	if thread.Tags == nil {
+		validTags = true
+	} else {
+		validTags = validateTags(*thread.Tags)
+	}
+	return validateContent(thread.Content) && validateTitle(thread.Title) && validTags
 }
+
+var titleAndContentRe = regexp.MustCompile(`\s+`)
+
 func validateContent(content string) bool {
-	return len(content) >= 1 && len(content) <= 10000
+	return len(content) >= 1 && len(content) <= 10000 && titleAndContentRe.ReplaceAllString(content, "") != ""
 }
 func validateTitle(title string) bool {
-	return len(title) >= 1 && len(title) <= 255
+	return len(title) >= 1 && len(title) <= 255 && titleAndContentRe.ReplaceAllString(title, "") != ""
 }
 
 func validateThreadId(id forum.ThreadIdPath) bool {
 	return id >= 1
 }
+
+// идея - вынести функцию универсальную для всех полей
