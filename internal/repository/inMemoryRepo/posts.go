@@ -27,7 +27,7 @@ func (r *RepoInMemory) GeneratePostId() int64 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.postId++
-	return r.threadId
+	return r.postId
 }
 func (r *RepoInMemory) CheckPostAlreadyExist(XUXI repository.XUXI) (forum.Post, error) {
 	r.mu.Lock()
