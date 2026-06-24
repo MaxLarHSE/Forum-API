@@ -11,7 +11,7 @@ import (
 	"stepik.leoscode.http/internal/repository"
 )
 
-func (r *RepoInMemory) CreateThread(threadCreate forum.ThreadCreate, XUXI repository.XUXI) forum.Thread {
+func (r *RepoInMemory) CreateThread(threadCreate forum.ThreadCreate, XUXI repository.XUXI) (forum.Thread, error) {
 	id := r.GenerateThreadId()
 	thread := forum.Thread{
 		AuthorId:  XUXI.XU,
@@ -27,7 +27,7 @@ func (r *RepoInMemory) CreateThread(threadCreate forum.ThreadCreate, XUXI reposi
 	defer r.mu.Unlock()
 	r.XUXIToThread[XUXI] = thread
 	r.idToThread[id] = thread
-	return thread
+	return thread, nil
 }
 
 func (r *RepoInMemory) GetThread(id int64) (forum.Thread, error) {

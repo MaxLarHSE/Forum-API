@@ -6,7 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-type XUXI struct { // где лучше разместить
+// где лучше разместить
+type XUXI struct {
 	XU uuid.UUID
 	XI string
 }

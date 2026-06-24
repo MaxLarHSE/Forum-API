@@ -18,15 +18,23 @@ type RepoInMemory struct {
 	idToThread   map[int64]forum.Thread // тут лучше модели форума или инт64
 	XUXIToThread map[repository.XUXI]forum.Thread
 
+	idToPost   map[int64]forum.Post
+	XUXIToPost map[repository.XUXI]forum.Post
+
 	mu       sync.Mutex
 	threadId int64
+	postId   int64
 }
 
 func (r *RepoInMemory) Clear() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	clear(r.userToUUID)
 	clear(r.UUIDToPwd)
 	clear(r.idToThread)
 	clear(r.XUXIToThread)
+	clear(r.idToPost)
+	clear(r.XUXIToPost)
 	return nil
 }
 
@@ -36,5 +44,7 @@ func NewRepoInMemory() *RepoInMemory {
 		UUIDToPwd:    make(map[uuid.UUID]string),
 		idToThread:   make(map[int64]forum.Thread),
 		XUXIToThread: make(map[repository.XUXI]forum.Thread),
+		idToPost:     make(map[int64]forum.Post),
+		XUXIToPost:   make(map[repository.XUXI]forum.Post),
 	}
 }

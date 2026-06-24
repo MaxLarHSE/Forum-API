@@ -36,7 +36,7 @@ func (s *Service) CreateThread(threadCreate forum.ThreadCreate, XUXI repository.
 		return t, ErrAlreadyThreadExist
 	}
 
-	return s.repo.CreateThread(threadCreate, XUXI), nil
+	return s.repo.CreateThread(threadCreate, XUXI)
 }
 
 func (s *Service) GetThreadById(id int64, userId *uuid.UUID) (forum.Thread, error) {

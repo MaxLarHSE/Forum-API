@@ -45,14 +45,13 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request, params for
 	switch {
 	case err == nil:
 		writeJson(w, http.StatusCreated, thread)
-		return
 	case errors.Is(err, service.ErrConflict):
 		writeError(w, http.StatusConflict, forum.ErrorConflict{
 			forum.BadRequest,
 			nil,
 			"distinct body but equal user and idempotency-key params in memory",
 		})
-	case errors.Is(err, service.ErrAlreadyThreadExist):
+	case errors.Is(err, service.ErrAlreadyPostExist):
 		writeJson(w, http.StatusOK, thread)
 	case errors.Is(err, service.ErrUserNotExist):
 		writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{
@@ -200,18 +199,14 @@ func (s *Server) PatchThread(w http.ResponseWriter, r *http.Request, threadId fo
 		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "no fields to update"})
 		return
 	}
-
-	if threadPatch.Title != nil {
-		if !validateTitle(*threadPatch.Title) {
-			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect title length"})
-			return
-		}
+	// подпеределать
+	if threadPatch.Title != nil && !validateTitle(*threadPatch.Title) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect title length"})
+		return
 	}
-	if threadPatch.Content != nil {
-		if !validateContent(*threadPatch.Content) {
-			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect content length"})
-			return
-		}
+	if threadPatch.Content != nil && !validateContent(*threadPatch.Content) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect content length"})
+		return
 	}
 	if threadPatch.Tags != nil && !validateTags(*threadPatch.Tags) {
 		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect tags"})

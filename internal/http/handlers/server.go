@@ -37,16 +37,6 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request, thread
 	panic("implement me")
 }
 
-func (s *Server) ListPosts(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.ListPostsParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.CreatePostParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *Server) HealthCheck(w http.ResponseWriter, r *http.Request, params forum.HealthCheckParams) {
 	w.Header().Set("Content-Type", "application/json")
 	if params.XRequestId != nil {
