@@ -14,13 +14,15 @@ type XUXI struct { // где лучше разместить
 var ( // переписать ошибки
 	ErrAlreadyThreadExist = errors.New("thread already exist")
 	ErrConflict           = errors.New("conflict")
-	ErrNoSuchUserExist    = errors.New("no such user exist")
+	ErrUserNotExist       = errors.New("user no exist")
 	ErrNoThreadFound      = errors.New("thread not exist")
 
-	ErrUserNotExist       = errors.New("user not exist")
 	ErrUserIdAlreadyExist = errors.New("user id already exist")
 	ErrPwdNotCorrect      = errors.New("password not correct")
 	ErrUserAlreadyExist   = errors.New("user already exist")
+
+	ErrUserDontHaveRights    = errors.New("user dont have rights")
+	ErrTryChangeLockedThread = errors.New("try change locked thread")
 )
 
 type ThreadListFilter struct {

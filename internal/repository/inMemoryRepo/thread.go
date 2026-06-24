@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	forum "stepik.leoscode.http/internal/gen/api"
+	"stepik.leoscode.http/internal/models"
 	"stepik.leoscode.http/internal/repository"
 )
 
@@ -49,7 +50,7 @@ func (r *RepoInMemory) CheckUserExist(user uuid.UUID) error {
 	defer r.mu.Unlock()
 	_, ok := r.UUIDToPwd[user]
 	if !ok {
-		return repository.ErrNoSuchUserExist
+		return repository.ErrUserNotExist
 	}
 	return nil
 }
@@ -115,4 +116,40 @@ func (r *RepoInMemory) ThreadsSortedByID() []forum.Thread { // gpt func
 	}
 
 	return threads
+}
+
+func (r *RepoInMemory) ReplaceThreadById(id int64, create forum.ThreadCreate) (forum.Thread, error) { //	тут не протухает что то с XUXI
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	threadToChange := r.idToThread[id]
+	threadToChange.Title = create.Title
+	threadToChange.Content = create.Content
+	threadToChange.Tags = create.Tags
+	now := time.Now()
+	threadToChange.UpdatedAt = &now
+	r.idToThread[id] = threadToChange
+	return threadToChange, nil
+}
+
+func (r *RepoInMemory) ChangeThreadById(id forum.ThreadIdPath, patch models.ThreadPatchInput) (forum.Thread, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	threadToChange := r.idToThread[id]
+	if patch.Content != nil {
+		threadToChange.Content = *patch.Content
+	}
+	if patch.Title != nil {
+		threadToChange.Title = *patch.Title
+	}
+	if patch.IsLocked != nil {
+		threadToChange.IsLocked = *patch.IsLocked
+	}
+	if patch.Tags != nil {
+		threadToChange.Tags = patch.Tags
+	}
+
+	now := time.Now()
+	threadToChange.UpdatedAt = &now
+	r.idToThread[id] = threadToChange
+	return threadToChange, nil
 }

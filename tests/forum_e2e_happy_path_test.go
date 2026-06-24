@@ -462,7 +462,6 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			})
 		})
 	})
-	return
 
 	// 6. PATCH треда
 	t.Run("[PATCH]/api/v1/threads/{thread_id}", func(t *testing.T) {
@@ -694,7 +693,7 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			})
 		}
 	})
-
+	return
 	// 8. Посты в треде: создание (happy path)
 	var (
 		postA1_1 *Post

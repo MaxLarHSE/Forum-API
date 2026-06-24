@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/google/uuid"
 	forum "stepik.leoscode.http/internal/gen/api"
+	"stepik.leoscode.http/internal/models"
 	"stepik.leoscode.http/internal/repository"
 )
 
@@ -12,8 +13,10 @@ type Repo interface { // изменить интерфейс под дальне
 	CheckCorrectPwd(username, password string) error
 
 	CreateThread(thread forum.ThreadCreate, XUXI repository.XUXI) forum.Thread
-	GetThread(id int64) (forum.Thread, error)
+	GetThread(id forum.ThreadIdPath) (forum.Thread, error)
 	GetThreads(filter repository.ThreadListFilter) (forum.ThreadListResponse, error)
+	ReplaceThreadById(id forum.ThreadIdPath, create forum.ThreadCreate) (forum.Thread, error)
+	ChangeThreadById(id forum.ThreadIdPath, patch models.ThreadPatchInput) (forum.Thread, error)
 
 	CheckUserExist(user uuid.UUID) error
 	CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thread, error)

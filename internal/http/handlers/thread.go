@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	forum "stepik.leoscode.http/internal/gen/api"
+	"stepik.leoscode.http/internal/models"
 	"stepik.leoscode.http/internal/repository"
 	"stepik.leoscode.http/internal/service"
 )
@@ -52,7 +53,7 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request, params for
 		})
 	case errors.Is(err, service.ErrAlreadyThreadExist):
 		writeJson(w, http.StatusOK, thread)
-	case errors.Is(err, service.ErrNoSuchUserExist):
+	case errors.Is(err, service.ErrUserNotExist):
 		writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{
 			forum.InvalidCredentials,
 			nil,
@@ -77,7 +78,7 @@ func (s *Server) GetThread(w http.ResponseWriter, r *http.Request, threadId foru
 	switch {
 	case err == nil:
 		writeJson(w, http.StatusOK, t)
-	case errors.Is(err, service.ErrNoSuchUserExist):
+	case errors.Is(err, service.ErrUserNotExist):
 		writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{forum.Unauthorized, &map[string]any{}, "no thread found"})
 
 	case errors.Is(err, service.ErrThreadNotFound):
@@ -135,6 +136,119 @@ func (s *Server) ListThreads(w http.ResponseWriter, r *http.Request, params foru
 	}
 }
 
+func (s *Server) ReplaceThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.ReplaceThreadParams) {
+	if !validateThreadId(threadId) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"thread id": threadId}, "thread is minimum 1"})
+		return
+	}
+	var threadCreate forum.ThreadCreate
+	if err := readJson(r, &threadCreate); err != nil {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"json": threadCreate}, "json decode error"})
+		return
+	}
+	if !validateThread(threadCreate) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{
+			forum.ValidationError,
+			&map[string]any{"content": threadCreate.Content, "title": threadCreate.Title},
+			"invalid params in thread"},
+		)
+		return
+	}
+
+	thread, err := s.service.ReplaceThreadById(threadId, threadCreate, params)
+	switch {
+	case err == nil:
+		writeJson(w, http.StatusOK, thread)
+	case errors.Is(err, service.ErrUserDontHaveRights):
+		writeError(w, http.StatusForbidden, forum.ErrorForbidden{forum.Forbidden, &map[string]any{}, "user dont have rights"})
+	case errors.Is(err, service.ErrThreadNotFound):
+		writeError(w, http.StatusNotFound, forum.ErrorNotFound{forum.NotFound, &map[string]any{"id": threadId}, "thread not found"})
+	case errors.Is(err, service.ErrUserNotExist):
+		writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{forum.Unauthorized, &map[string]any{}, "user dont exist"})
+	default:
+		writeError(w, http.StatusInternalServerError, forum.ErrorInternal{
+			forum.InternalError,
+			&map[string]interface{}{"error": err}, // возможно не стоит ошибку передавать ибо она может содержать внутрянку
+			"no relevant error",
+		})
+	}
+}
+func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.DeleteThreadParams) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Server) PatchThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.PatchThreadParams) {
+	if !validateThreadId(threadId) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"thread id": threadId}, "thread is minimum 1"})
+		return
+	}
+	var threadPatch models.ThreadPatchInput
+	if err := readJson(r, &threadPatch); err != nil {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"json": threadPatch}, "json decode error"})
+		return
+	}
+	// в спеке вроде комменты о том что максимум одно поле может быть изменено за раз, хотя там anyOf...
+	/*
+		n := threadPatchFields(threadPatch)
+		if n == 0 {
+			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "no fields to update"})
+			return
+		}
+		if n > 1 {
+			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "only one field allowed per request"})
+			return
+		}*/
+	if threadPatch.Title != nil {
+		if !validateTitle(*threadPatch.Title) {
+			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect title length"})
+			return
+		}
+	}
+	if threadPatch.Content != nil {
+		if !validateContent(*threadPatch.Content) {
+			writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, nil, "uncorrect content length"})
+			return
+		}
+	}
+	thread, err := s.service.ChangeThreadById(threadId, threadPatch, params)
+	switch {
+	case err == nil:
+		writeJson(w, http.StatusOK, thread)
+	case errors.Is(err, service.ErrUserDontHaveRights):
+		writeError(w, http.StatusForbidden, forum.ErrorForbidden{forum.Forbidden, &map[string]any{}, "user dont have rights"})
+	case errors.Is(err, service.ErrThreadNotFound):
+		writeError(w, http.StatusNotFound, forum.ErrorNotFound{forum.NotFound, &map[string]any{"id": threadId}, "thread not found"})
+	case errors.Is(err, service.ErrUserNotExist):
+		writeError(w, http.StatusUnauthorized, forum.ErrorUnauthorized{forum.Unauthorized, &map[string]any{}, "user dont exist"})
+	case errors.Is(err, service.ErrTryChangeLockedThread):
+		writeError(w, http.StatusForbidden, forum.ErrorUnauthorized{forum.Forbidden, &map[string]any{}, "thread is locked"})
+	default:
+		writeError(w, http.StatusInternalServerError, forum.ErrorInternal{
+			forum.InternalError,
+			&map[string]interface{}{"error": err}, // возможно не стоит ошибку передавать ибо она может содержать внутрянку
+			"no relevant error",
+		})
+	}
+}
+
+func threadPatchFields(threadPatch models.ThreadPatchInput) int {
+	n := 0
+	if threadPatch.Title != nil {
+		n++
+	}
+	if threadPatch.Content != nil {
+		n++
+	}
+	if threadPatch.Tags != nil {
+		n++
+	}
+	if threadPatch.IsLocked != nil {
+		n++
+	}
+	return n
+}
+
 var tagRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 
 func validTag(tag string) bool {
@@ -151,9 +265,13 @@ func validateXI(XI string) bool {
 }
 
 func validateThread(thread forum.ThreadCreate) bool {
-	isCorrectContent := len(thread.Content) >= 1 && len(thread.Content) <= 10000
-	isCorrectTitle := len(thread.Title) >= 1 && len(thread.Title) <= 255
-	return isCorrectContent && isCorrectTitle
+	return validateContent(thread.Content) && validateTitle(thread.Title)
+}
+func validateContent(content string) bool {
+	return len(content) >= 1 && len(content) <= 10000
+}
+func validateTitle(title string) bool {
+	return len(title) >= 1 && len(title) <= 255
 }
 
 func validateThreadId(id forum.ThreadIdPath) bool {

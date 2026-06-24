@@ -32,21 +32,6 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request, params forum.Sea
 	panic("implement me")
 }
 
-func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.DeleteThreadParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *Server) PatchThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.PatchThreadParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *Server) ReplaceThread(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.ReplaceThreadParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.UploadAttachmentParams) {
 	//TODO implement me
 	panic("implement me")
