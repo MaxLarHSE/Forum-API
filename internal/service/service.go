@@ -20,6 +20,8 @@ type Repo interface { // изменить интерфейс под дальне
 	DeleteThreadByUd(id forum.ThreadIdPath) error
 
 	CreatePost(post forum.PostCreate, id forum.ThreadIdPath, XUXI repository.XUXI) (forum.Post, error)
+	GetPosts(id forum.ThreadIdPath, filter repository.PostListFilter) (forum.PostListResponse, error)
+
 	CheckUserExist(user uuid.UUID) error
 	CheckThreadAlreadyExist(XUXI repository.XUXI) (forum.Thread, error)
 	CheckPostAlreadyExist(XUXI repository.XUXI) (forum.Post, error)

@@ -32,3 +32,12 @@ func (s *Service) CreatePost(postCreate forum.PostCreate, id forum.ThreadIdPath,
 
 	return s.repo.CreatePost(postCreate, id, XUXI)
 }
+
+func (s *Service) GetListPosts(id forum.ThreadIdPath, filter repository.PostListFilter) (forum.PostListResponse, error) {
+	_, err := s.repo.GetThread(id)
+	if errors.Is(err, repository.ErrNoThreadFound) {
+		return forum.PostListResponse{}, ErrThreadNotFound
+	}
+	list, err := s.repo.GetPosts(id, filter)
+	return list, err
+}

@@ -32,3 +32,7 @@ type ThreadListFilter struct {
 	Tag      *string
 	AuthorID *uuid.UUID
 }
+type PostListFilter struct {
+	Limit  int32
+	Offset int32
+}

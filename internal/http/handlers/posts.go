@@ -10,8 +10,47 @@ import (
 )
 
 func (s *Server) ListPosts(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.ListPostsParams) {
-	//TODO implement me
-	panic("implement me")
+	if !validateThreadId(threadId) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"thread id": threadId}, "thread is minimum 1"})
+		return
+	}
+	var limit, offset int32
+	if params.Limit == nil {
+		limit = 20
+	} else {
+		limit = *params.Limit
+	}
+
+	if params.Offset == nil {
+		offset = 0
+	} else {
+		offset = *params.Offset
+	}
+	if !validateLimit(limit) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"limit": limit}, "limit must be >=1 and <=100"})
+		return
+	}
+	if !validateOffset(offset) {
+		writeError(w, http.StatusBadRequest, forum.ErrorBadRequest{forum.ValidationError, &map[string]any{"offset": offset}, "offset must be >=0"})
+		return
+	}
+	//forum.PostListResponse{}
+	posts, err := s.service.GetListPosts(threadId, repository.PostListFilter{
+		Limit:  limit,
+		Offset: offset,
+	})
+	switch {
+	case err == nil:
+		writeJson(w, http.StatusOK, posts)
+	case errors.Is(err, service.ErrThreadNotFound):
+		writeError(w, http.StatusNotFound, forum.ErrorBadRequest{forum.NotFound, &map[string]any{}, "thread not found"})
+	default:
+		writeError(w, http.StatusInternalServerError, forum.ErrorInternal{
+			forum.InternalError,
+			&map[string]interface{}{"error": err.Error()},
+			"no relevant error",
+		})
+	}
 }
 
 func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request, threadId forum.ThreadIdPath, params forum.CreatePostParams) {

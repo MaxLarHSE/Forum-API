@@ -759,7 +759,7 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			})
 		}
 	})
-	return
+
 	if postA1_1 == nil || postA1_2 == nil || postA2_1 == nil || postB2_1 == nil {
 		t.Fatalf("posts not initialized")
 	}
@@ -855,7 +855,7 @@ func Test_Forum_e2e_HappyPath(t *testing.T) {
 			})
 		}
 	})
-
+	return
 	// 10. Вложения: upload -> get metadata -> download
 
 	// 10.1 Upload attachment (multipart/form-data)
